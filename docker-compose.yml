@@ -1,0 +1,47 @@
+version: '3.7'
+services:
+  django:
+    build: ./django
+    command: gunicorn application.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./django:/usr/src/django/
+    expose:
+      - 8000
+    networks:
+      - nginx_network
+      - database_network
+    env_file:
+      - .env.dev
+    depends_on:
+      - database
+
+  database:
+    image: postgres:12.0-alpine
+    volumes:
+      - database_volume:/var/lib/postgresql/data/
+    networks:
+      - database_network
+    env_file:
+      - .env.dev
+
+  nginx:
+    image: nginx:1.17.4-alpine
+    volumes:
+      - ./config/nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - 8000:80
+    networks:
+      - nginx_network
+    env_file:
+      - .env.dev
+    depends_on:
+      - django
+
+networks:
+  nginx_network:
+    driver: bridge
+  database_network:
+    driver: bridge
+
+volumes:
+  database_volume:
